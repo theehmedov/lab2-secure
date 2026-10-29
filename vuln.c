@@ -2,32 +2,37 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* 1. Yaddaş sızması: malloc var, free yoxdur */
+/* 1. Düzəliş: istifadədən sonra free() */
 void leak(void) {
     char *p = malloc(100);
+    if (p == NULL) return;
     strcpy(p, "salam");
     printf("%s\n", p);
+    free(p);
 }
 
-/* 2. Use-after-free: azad edilmiş yaddaşa müraciət */
+/* 2. Düzəliş: əvvəl istifadə, sonra free(), sonra NULL */
 void uaf(void) {
     int *p = malloc(sizeof(int));
+    if (p == NULL) return;
     *p = 5;
-    free(p);
     printf("%d\n", *p);
+    free(p);
+    p = NULL;
 }
 
-/* 3. Massiv sərhədindən kənara yazılma: a[5] mövcud deyil */
+/* 3. Düzəliş: dövr sərhədi massivin ölçüsündən hesablanır */
 void overflow(void) {
     int a[5];
-    for (int i = 0; i <= 5; i++)
-        a[i] = i;
+    for (size_t i = 0; i < sizeof(a) / sizeof(a[0]); i++)
+        a[i] = (int)i;
     printf("%d\n", a[0]);
 }
 
-/* 4. İlkin qiymət verilməmiş yaddaşın oxunması */
+/* 4. Düzəliş: calloc yaddaşı sıfırla doldurur */
 void uninit(void) {
-    int *p = malloc(sizeof(int));
+    int *p = calloc(1, sizeof(int));
+    if (p == NULL) return;
     if (*p > 10)
         printf("boyuk\n");
     else
